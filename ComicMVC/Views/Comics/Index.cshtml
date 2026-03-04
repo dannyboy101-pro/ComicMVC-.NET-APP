@@ -1,0 +1,216 @@
+﻿@model List<ComicMVC.Models.Comic>
+
+@{
+    ViewData["Title"] = "Comic Encyclopedia";
+
+    bool isLoggedIn = (ViewBag.IsLoggedIn ?? false);
+    bool isStaff = (ViewBag.IsStaff ?? false);
+
+    string genre = ViewBag.Genre as string ?? "All";
+    string sort = ViewBag.Sort as string ?? "None";
+    string group = ViewBag.Group as string ?? "None";
+
+    var topQueries = ViewBag.TopQueries as List<string> ?? new List<string>();
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h1 class="display-6 mb-0">Comic Encyclopedia</h1>
+        <p class="text-muted mb-0">Search and explore the British Library dataset.</p>
+    </div>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-controller="Kiosk" asp-action="Index">Kiosk Mode</a>
+
+        @* Staff-only shortcut *@
+        @if (isStaff)
+        {
+            <a class="btn btn-outline-primary" asp-controller="Comics" asp-action="StaffDashboard">Staff</a>
+        }
+    </div>
+</div>
+
+<form method="get" asp-controller="Comics" asp-action="Index" class="card p-3 mb-4">
+    <div class="row g-3">
+        <div class="col-md-3">
+            <label class="form-label">Genre</label>
+            <select name="genre" class="form-select">
+                <option value="All" selected="@(genre == "All")">All</option>
+                <option value="Fantasy" selected="@(genre == "Fantasy")">Fantasy</option>
+                <option value="Horror" selected="@(genre == "Horror")">Horror</option>
+                <option value="Science Fiction" selected="@(genre == "Science Fiction")">Science Fiction</option>
+                <option value="Other" selected="@(genre == "Other")">Other</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Sort</label>
+            <select name="sort" class="form-select">
+                <option value="None" selected="@(sort == "None")">None</option>
+                <option value="Title A-Z" selected="@(sort == "Title A-Z")">Title A-Z</option>
+                <option value="Title Z-A" selected="@(sort == "Title Z-A")">Title Z-A</option>
+                <option value="Author A-Z" selected="@(sort == "Author A-Z")">Author A-Z</option>
+                <option value="Author Z-A" selected="@(sort == "Author Z-A")">Author Z-A</option>
+                <option value="Year Ascending" selected="@(sort == "Year Ascending")">Year Ascending</option>
+                <option value="Year Descending" selected="@(sort == "Year Descending")">Year Descending</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Group</label>
+            <select name="group" class="form-select">
+                <option value="None" selected="@(group == "None")">None</option>
+                <option value="By Author" selected="@(group == "By Author")">By Author</option>
+                <option value="By Year" selected="@(group == "By Year")">By Year</option>
+                <option value="By Genre" selected="@(group == "By Genre")">By Genre</option>
+            </select>
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Search (Title / Author / Year / ISBN)</label>
+            <input type="text" name="search" class="form-control" value="@Context.Request.Query["search"]" placeholder="Search..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Author contains</label>
+            <input type="text" name="author" class="form-control" value="@Context.Request.Query["author"]" placeholder="Author..." />
+        </div>
+
+        <div class="col-md-2">
+            <label class="form-label">Year contains</label>
+            <input type="text" name="year" class="form-control" value="@Context.Request.Query["year"]" placeholder="Year..." />
+        </div>
+
+        <div class="col-md-3">
+            <label class="form-label">Edition contains</label>
+            <input type="text" name="edition" class="form-control" value="@Context.Request.Query["edition"]" placeholder="Edition..." />
+        </div>
+
+        <div class="col-md-4">
+            <label class="form-label">Language contains</label>
+            <input type="text" name="language" class="form-control" value="@Context.Request.Query["language"]" placeholder="Language..." />
+        </div>
+
+        <div class="col-12 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Search</button>
+            <a class="btn btn-outline-secondary" asp-controller="Comics" asp-action="Index">Reset</a>
+
+            @if (!isLoggedIn)
+            {
+                <span class="ms-2 text-muted align-self-center">
+                    Tip: log in to save favourites. Staff can also flag comics.
+                </span>
+            }
+        </div>
+    </div>
+</form>
+
+<div class="row">
+    <div class="col-lg-9">
+        <div class="text-muted mb-2">
+            Showing <strong>@Model.Count</strong> results (max 100 shown by controller)
+        </div>
+
+        <div class="table-responsive">
+            <table class="table align-middle">
+                <thead>
+                    <tr>
+                        <th style="min-width:240px;">Title</th>
+                        <th style="min-width:140px;">Author</th>
+                        <th style="width:90px;">Year</th>
+                        <th style="width:140px;">Genre</th>
+                        <th style="min-width:140px;">ISBN</th>
+                        <th style="min-width:160px;">Language</th>
+                        <th style="width:220px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < Model.Count; i++)
+                    {
+                        var c = Model[i];
+
+                        <tr>
+                            <td>@c.Title</td>
+                            <td>@c.Author</td>
+                            <td>@c.YearOfPublication</td>
+                            <td>@c.Genre</td>
+                            <td>@c.ISBN</td>
+                            <td>@c.Languages</td>
+                            <td class="d-flex gap-2 flex-wrap">
+                                <a class="btn btn-sm btn-outline-primary"
+                                   asp-controller="Comics"
+                                   asp-action="Details"
+                                   asp-route-index="@i"
+                                   asp-route-genre="@genre">
+                                    Details
+                                </a>
+
+                                @* SAVE: Logged-in users only *@
+                                @if (isLoggedIn)
+                                {
+                                    <form method="post" asp-controller="Comics" asp-action="Save" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="index" value="@i" />
+                                        <input type="hidden" name="genre" value="@genre" />
+                                        <button type="submit" class="btn btn-sm btn-success">
+                                            Save
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <a class="btn btn-sm btn-outline-success"
+                                       asp-area="Identity"
+                                       asp-page="/Account/Login">
+                                        Login to Save
+                                    </a>
+                                }
+
+                                @* FLAG: Staff only *@
+                                @if (isStaff)
+                                {
+                                    <form method="post" asp-controller="Comics" asp-action="Flag" class="d-inline">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="index" value="@i" />
+                                        <input type="hidden" name="genre" value="@genre" />
+                                        <button type="submit" class="btn btn-sm btn-warning">
+                                            Flag
+                                        </button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="col-lg-3">
+        <div class="card p-3 mb-3">
+            <h5 class="mb-2">Top 10 Search Queries</h5>
+            @if (topQueries.Count == 0)
+            {
+                <div class="text-muted">No searches yet.</div>
+            }
+            else
+            {
+                <ol class="mb-0">
+                    @foreach (var q in topQueries)
+                    {
+                        <li>@q</li>
+                    }
+                </ol>
+            }
+        </div>
+
+        <div class="card p-3">
+            <h6 class="mb-2">Access Rules</h6>
+            <ul class="mb-0">
+                <li>Public: search + view</li>
+                <li>Logged-in: can save favourites</li>
+                <li>Staff: can flag comics + view reporting</li>
+            </ul>
+        </div>
+    </div>
+</div>

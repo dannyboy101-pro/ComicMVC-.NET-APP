@@ -1,0 +1,122 @@
+﻿@model List<ComicMVC.Models.FlaggedComic>
+
+@{
+    ViewData["Title"] = "Staff Dashboard";
+    var topQueries = ViewBag.TopQueries as List<string> ?? new List<string>();
+    var topComics = ViewBag.TopComics as List<string> ?? new List<string>();
+    var moreThan100 = ViewBag.MoreThan100 as List<string> ?? new List<string>();
+}
+
+<div class="container py-4">
+    <h1 class="mb-3">Staff Dashboard</h1>
+    <p class="text-muted">Reporting & flagged items (Staff only).</p>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="border rounded p-3">
+                <h5>Total favourites</h5>
+                <div class="display-6">@ViewBag.TotalFavourites</div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="border rounded p-3">
+                <h5>Total flags</h5>
+                <div class="display-6">@ViewBag.TotalFlags</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="border rounded p-3">
+                <h5>Top 10 Search Queries</h5>
+                @if (topQueries.Count == 0)
+                {
+                    <div class="text-muted">No searches yet.</div>
+                }
+                else
+                {
+                    <ul class="mb-0">
+                        @foreach (var q in topQueries)
+                        {
+                            <li>@q</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="border rounded p-3">
+                <h5>Top 10 Viewed Comics</h5>
+                @if (topComics.Count == 0)
+                {
+                    <div class="text-muted">No views yet.</div>
+                }
+                else
+                {
+                    <ul class="mb-0">
+                        @foreach (var c in topComics)
+                        {
+                            <li>@c</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+
+        <div class="col-md-4">
+            <div class="border rounded p-3">
+                <h5>Comics appearing &gt; 100 times</h5>
+                @if (moreThan100.Count == 0)
+                {
+                    <div class="text-muted">None yet.</div>
+                }
+                else
+                {
+                    <ul class="mb-0">
+                        @foreach (var c in moreThan100)
+                        {
+                            <li>@c</li>
+                        }
+                    </ul>
+                }
+            </div>
+        </div>
+    </div>
+
+    <div class="border rounded p-3">
+        <h5 class="mb-3">Recently Flagged Comics</h5>
+
+        @if (Model == null || Model.Count == 0)
+        {
+            <div class="text-muted">No flagged comics yet.</div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm align-middle">
+                    <thead>
+                        <tr>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Reason</th>
+                            <th>Flagged At (UTC)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var f in Model)
+                        {
+                            <tr>
+                                <td>@f.Title</td>
+                                <td>@f.Author</td>
+                                <td>@f.Reason</td>
+                                <td>@f.FlaggedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,69 @@
+﻿@{
+    ViewData["Title"] = "Kiosk Mode";
+    Layout = "_Layout";
+}
+
+<style>
+    .kiosk-btn {
+        padding: 18px 22px;
+        font-size: 1.2rem;
+    }
+
+    .kiosk-search {
+        font-size: 1.2rem;
+        padding: 14px;
+    }
+</style>
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h1 class="display-6 m-0">Kiosk Mode</h1>
+        <a class="btn btn-outline-secondary" asp-controller="Comics" asp-action="Index">Exit Kiosk</a>
+    </div>
+
+    <p class="text-muted mt-2">Touch-friendly public search for customers.</p>
+
+    <div class="row g-3 mt-2">
+        <div class="col-12 col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Quick Browse</h2>
+
+                    <div class="d-grid gap-2">
+                        <a class="btn btn-primary kiosk-btn" href="/Comics/Index">Browse All Comics</a>
+                        <a class="btn btn-outline-primary kiosk-btn" href="/Comics/Index?genre=Fantasy">Fantasy</a>
+                        <a class="btn btn-outline-primary kiosk-btn" href="/Comics/Index?genre=Horror">Horror</a>
+                        <a class="btn btn-outline-primary kiosk-btn" href="/Comics/Index?genre=Science%20Fiction">Science Fiction</a>
+                        <a class="btn btn-outline-primary kiosk-btn" href="/Comics/Index?genre=Other">Other</a>
+                    </div>
+
+                    <hr />
+
+                    <h2 class="h6">Fullscreen Tip</h2>
+                    <p class="mb-0 text-muted">
+                        Press <strong>F11</strong> to run the kiosk in fullscreen.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-6">
+            <div class="card">
+                <div class="card-body">
+                    <h2 class="h5">Quick Search</h2>
+
+                    <form method="get" action="/Comics/Index" class="d-grid gap-2">
+                        <input class="form-control kiosk-search" name="search" placeholder="Search title, author, year, ISBN..." />
+                        <button class="btn btn-success kiosk-btn" type="submit">Search</button>
+                    </form>
+
+                    <hr />
+
+                    <p class="text-muted mb-0">
+                        Public users can search and view comics. Saving/analytics are staff features.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

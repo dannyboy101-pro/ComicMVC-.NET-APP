@@ -1,0 +1,48 @@
+﻿@model ComicMVC.Models.Comic
+
+@{
+    ViewData["Title"] = "Comic Details";
+    var detailsText = (ViewBag.DetailsText as string) ?? "";
+}
+
+<div class="container py-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+        <h1 class="h4 m-0">Comic Details</h1>
+        <a class="btn btn-outline-secondary" asp-controller="Comics" asp-action="Index">Back</a>
+    </div>
+
+    <hr />
+
+    <div class="card">
+        <div class="card-body">
+            <h2 class="h5">@Model.Title</h2>
+            <p class="text-muted mb-3">@Model.Author</p>
+
+            <dl class="row mb-0">
+                <dt class="col-sm-3">Year</dt>
+                <dd class="col-sm-9">@Model.YearOfPublication</dd>
+
+                <dt class="col-sm-3">Genre</dt>
+                <dd class="col-sm-9">@Model.Genre</dd>
+
+                <dt class="col-sm-3">Edition</dt>
+                <dd class="col-sm-9">@Model.Edition</dd>
+
+                <dt class="col-sm-3">Language</dt>
+                <dd class="col-sm-9">@Model.Languages</dd>
+
+                <dt class="col-sm-3">ISBN</dt>
+                <dd class="col-sm-9">@Model.ISBN</dd>
+
+                <dt class="col-sm-3">Material</dt>
+                <dd class="col-sm-9">@Model.MaterialType</dd>
+            </dl>
+
+            @if (!string.IsNullOrWhiteSpace(detailsText))
+            {
+                <hr />
+                <pre class="m-0">@detailsText</pre>
+            }
+        </div>
+    </div>
+</div>
