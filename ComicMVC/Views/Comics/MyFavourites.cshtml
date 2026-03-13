@@ -1,0 +1,53 @@
+﻿@model List<ComicMVC.Models.FavouriteComic>
+
+@{
+    ViewData["Title"] = "My Favourites";
+}
+
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h1 class="display-6 mb-0">My Favourite Comics</h1>
+            <p class="text-muted mb-0">These are the comics you have saved.</p>
+        </div>
+
+        <a class="btn btn-outline-secondary" asp-controller="Comics" asp-action="Index">Back to Comics</a>
+    </div>
+
+    @if (Model == null || Model.Count == 0)
+    {
+        <div class="alert alert-info">
+            You have not saved any comics yet.
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                    <tr>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Genre</th>
+                        <th>Year</th>
+                        <th>ISBN</th>
+                        <th>Saved On</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var comic in Model)
+                    {
+                        <tr>
+                            <td>@comic.Title</td>
+                            <td>@comic.Author</td>
+                            <td>@comic.Genre</td>
+                            <td>@comic.Year</td>
+                            <td>@comic.ISBN</td>
+                            <td>@comic.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>

@@ -16,7 +16,7 @@ namespace ComicMVC.Models
         [Required]
         public string Reason { get; set; } = "";
 
-        // Snapshot fields used by your StaffDashboard + controller
+        
         public string Title { get; set; } = "";
         public string Author { get; set; } = "";
         public string Genre { get; set; } = "";

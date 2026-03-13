@@ -16,16 +16,20 @@
 <div class="d-flex justify-content-between align-items-center mb-3">
     <div>
         <h1 class="display-6 mb-0">Comic Encyclopedia</h1>
-        <p class="text-muted mb-0">Search and explore the British Library dataset.</p>
+        <p class="text-muted mb-0">Search and explore the comic dataset.</p>
     </div>
 
     <div class="d-flex gap-2">
         <a class="btn btn-outline-secondary" asp-controller="Kiosk" asp-action="Index">Kiosk Mode</a>
 
-        @* Staff-only shortcut *@
+        @if (isLoggedIn)
+        {
+            <a class="btn btn-outline-success" asp-controller="Comics" asp-action="MyFavourites">My Favourites</a>
+        }
+
         @if (isStaff)
         {
-            <a class="btn btn-outline-primary" asp-controller="Comics" asp-action="StaffDashboard">Staff</a>
+            <a class="btn btn-outline-primary" asp-controller="Comics" asp-action="StaffDashboard">Staff Dashboard</a>
         }
     </div>
 </div>
@@ -94,13 +98,6 @@
         <div class="col-12 d-flex gap-2">
             <button type="submit" class="btn btn-primary">Search</button>
             <a class="btn btn-outline-secondary" asp-controller="Comics" asp-action="Index">Reset</a>
-
-            @if (!isLoggedIn)
-            {
-                <span class="ms-2 text-muted align-self-center">
-                    Tip: log in to save favourites. Staff can also flag comics.
-                </span>
-            }
         </div>
     </div>
 </form>
@@ -108,20 +105,20 @@
 <div class="row">
     <div class="col-lg-9">
         <div class="text-muted mb-2">
-            Showing <strong>@Model.Count</strong> results (max 100 shown by controller)
+            Showing <strong>@Model.Count</strong> results
         </div>
 
         <div class="table-responsive">
             <table class="table align-middle">
                 <thead>
                     <tr>
-                        <th style="min-width:240px;">Title</th>
-                        <th style="min-width:140px;">Author</th>
-                        <th style="width:90px;">Year</th>
-                        <th style="width:140px;">Genre</th>
-                        <th style="min-width:140px;">ISBN</th>
-                        <th style="min-width:160px;">Language</th>
-                        <th style="width:220px;">Actions</th>
+                        <th>Title</th>
+                        <th>Author</th>
+                        <th>Year</th>
+                        <th>Genre</th>
+                        <th>ISBN</th>
+                        <th>Language</th>
+                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -145,37 +142,23 @@
                                     Details
                                 </a>
 
-                                @* SAVE: Logged-in users only *@
                                 @if (isLoggedIn)
                                 {
                                     <form method="post" asp-controller="Comics" asp-action="Save" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="index" value="@i" />
                                         <input type="hidden" name="genre" value="@genre" />
-                                        <button type="submit" class="btn btn-sm btn-success">
-                                            Save
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-success">Save</button>
                                     </form>
                                 }
-                                else
-                                {
-                                    <a class="btn btn-sm btn-outline-success"
-                                       asp-area="Identity"
-                                       asp-page="/Account/Login">
-                                        Login to Save
-                                    </a>
-                                }
 
-                                @* FLAG: Staff only *@
                                 @if (isStaff)
                                 {
                                     <form method="post" asp-controller="Comics" asp-action="Flag" class="d-inline">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="index" value="@i" />
                                         <input type="hidden" name="genre" value="@genre" />
-                                        <button type="submit" class="btn btn-sm btn-warning">
-                                            Flag
-                                        </button>
+                                        <button type="submit" class="btn btn-sm btn-warning">Flag</button>
                                     </form>
                                 }
                             </td>
@@ -187,30 +170,21 @@
     </div>
 
     <div class="col-lg-3">
-        <div class="card p-3 mb-3">
-            <h5 class="mb-2">Top 10 Search Queries</h5>
+        <div class="card p-3">
+            <h5 class="mb-2">Top Search Queries</h5>
             @if (topQueries.Count == 0)
             {
                 <div class="text-muted">No searches yet.</div>
             }
             else
             {
-                <ol class="mb-0">
+                <ul class="mb-0">
                     @foreach (var q in topQueries)
                     {
                         <li>@q</li>
                     }
-                </ol>
+                </ul>
             }
-        </div>
-
-        <div class="card p-3">
-            <h6 class="mb-2">Access Rules</h6>
-            <ul class="mb-0">
-                <li>Public: search + view</li>
-                <li>Logged-in: can save favourites</li>
-                <li>Staff: can flag comics + view reporting</li>
-            </ul>
         </div>
     </div>
 </div>

@@ -7,11 +7,17 @@ using System.Linq;
 
 namespace ComicMVC.Tests
 {
+    /*
+     * ComicRepositoryTests
+     *
+     * These tests check whether the repository loads and manages comic data
+     * correctly. The repository is important because it links the input layer
+     * to the rest of the application logic.
+     */
+
     [TestClass]
     public class ComicRepositoryTests
     {
-        // -------- STUB CODE (P4) ----------
-        // Fake loader so we can test ComicRepository in isolation
         private class FakeDataLoader : IDataLoader
         {
             private readonly Dictionary<string, List<Comic>> _dataByFileName;
@@ -54,7 +60,6 @@ namespace ComicMVC.Tests
                 new ComicGrouper()
             );
 
-            // empty temp folder (no files created)
             var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
             Directory.CreateDirectory(tempDir);
 
@@ -72,7 +77,6 @@ namespace ComicMVC.Tests
         [TestMethod]
         public void LoadAllData_WhenAllThreeFilesExist_LoadsAndCombines()
         {
-            // Arrange fake data per expected filenames
             var data = new Dictionary<string, List<Comic>>
             {
                 ["names.csv"] = new List<Comic>
@@ -96,7 +100,6 @@ namespace ComicMVC.Tests
                 new ComicGrouper()
             );
 
-            // Create temp folder + the 3 files so File.Exists(path) becomes true
             var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
             Directory.CreateDirectory(tempDir);
 
@@ -106,10 +109,8 @@ namespace ComicMVC.Tests
 
             try
             {
-                // Act
                 repo.LoadAllData(tempDir);
 
-                // Assert
                 Assert.AreEqual(3, repo.GetTotalCount());
 
                 var all = repo.GetAllComics();
@@ -124,9 +125,81 @@ namespace ComicMVC.Tests
         }
 
         [TestMethod]
+        public void LoadAllData_WithOnlyOneFile_LoadsAvailableFile()
+        {
+            var data = new Dictionary<string, List<Comic>>
+            {
+                ["names.csv"] = new List<Comic>
+                {
+                    new Comic { Title="Only One", Genre="Fantasy" }
+                }
+            };
+
+            var repo = new ComicRepository(
+                new FakeDataLoader(data),
+                new GenreFilter(),
+                new ComicSorter(),
+                new ComicGrouper()
+            );
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, "names.csv"), "dummy");
+
+            try
+            {
+                repo.LoadAllData(tempDir);
+
+                Assert.AreEqual(1, repo.GetTotalCount());
+                Assert.AreEqual("Only One", repo.GetAllComics()[0].Title);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void GetAllComics_ReturnsLoadedComics()
+        {
+            var data = new Dictionary<string, List<Comic>>
+            {
+                ["names.csv"] = new List<Comic>
+                {
+                    new Comic { Title="Comic 1" },
+                    new Comic { Title="Comic 2" }
+                }
+            };
+
+            var repo = new ComicRepository(
+                new FakeDataLoader(data),
+                new GenreFilter(),
+                new ComicSorter(),
+                new ComicGrouper()
+            );
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, "names.csv"), "dummy");
+
+            try
+            {
+                repo.LoadAllData(tempDir);
+
+                var comics = repo.GetAllComics();
+
+                Assert.AreEqual(2, comics.Count);
+                Assert.AreEqual("Comic 1", comics[0].Title);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
         public void GetFilteredComics_All_ReturnsAll()
         {
-            // Arrange
             var data = new Dictionary<string, List<Comic>>
             {
                 ["names.csv"] = new List<Comic>
@@ -151,10 +224,8 @@ namespace ComicMVC.Tests
             {
                 repo.LoadAllData(tempDir);
 
-                // Act
                 var result = repo.GetFilteredComics("All");
 
-                // Assert
                 Assert.AreEqual(2, result.Count);
             }
             finally
@@ -202,6 +273,41 @@ namespace ComicMVC.Tests
         }
 
         [TestMethod]
+        public void GetFilteredComics_InvalidGenre_ReturnsEmptyList()
+        {
+            var data = new Dictionary<string, List<Comic>>
+            {
+                ["names.csv"] = new List<Comic>
+                {
+                    new Comic { Title="A", Genre="Fantasy" }
+                }
+            };
+
+            var repo = new ComicRepository(
+                new FakeDataLoader(data),
+                new GenreFilter(),
+                new ComicSorter(),
+                new ComicGrouper()
+            );
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, "names.csv"), "dummy");
+
+            try
+            {
+                repo.LoadAllData(tempDir);
+
+                var result = repo.GetFilteredComics("Romance");
+                Assert.AreEqual(0, result.Count);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
         public void GetSortedComics_ByTitleAscending_Works()
         {
             var data = new Dictionary<string, List<Comic>>
@@ -231,6 +337,45 @@ namespace ComicMVC.Tests
                 var sorted = repo.GetSortedComics("All", "Title", true);
                 Assert.AreEqual("Alpha", sorted[0].Title);
                 Assert.AreEqual("Zeta", sorted[1].Title);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void GetSortedComics_InvalidSortOption_ReturnsFilteredListSafely()
+        {
+            var data = new Dictionary<string, List<Comic>>
+            {
+                ["names.csv"] = new List<Comic>
+                {
+                    new Comic { Title="A", Genre="Fantasy" },
+                    new Comic { Title="B", Genre="Fantasy" }
+                }
+            };
+
+            var repo = new ComicRepository(
+                new FakeDataLoader(data),
+                new GenreFilter(),
+                new ComicSorter(),
+                new ComicGrouper()
+            );
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, "names.csv"), "dummy");
+
+            try
+            {
+                repo.LoadAllData(tempDir);
+
+                var result = repo.GetSortedComics("Fantasy", "Invalid", true);
+
+                Assert.AreEqual(2, result.Count);
+                Assert.AreEqual("A", result[0].Title);
+                Assert.AreEqual("B", result[1].Title);
             }
             finally
             {
@@ -277,6 +422,58 @@ namespace ComicMVC.Tests
             {
                 Directory.Delete(tempDir, true);
             }
+        }
+
+        [TestMethod]
+        public void GetGroupedComics_InvalidGroupOption_ReturnsSafeResult()
+        {
+            var data = new Dictionary<string, List<Comic>>
+            {
+                ["names.csv"] = new List<Comic>
+                {
+                    new Comic { Title="A", Author="John", Genre="All" }
+                }
+            };
+
+            var repo = new ComicRepository(
+                new FakeDataLoader(data),
+                new GenreFilter(),
+                new ComicSorter(),
+                new ComicGrouper()
+            );
+
+            var tempDir = Path.Combine(Path.GetTempPath(), "ComicRepoTest_" + System.Guid.NewGuid());
+            Directory.CreateDirectory(tempDir);
+            File.WriteAllText(Path.Combine(tempDir, "names.csv"), "dummy");
+
+            try
+            {
+                repo.LoadAllData(tempDir);
+
+                var result = repo.GetGroupedComics("All", "Invalid");
+                Assert.AreEqual(0, result.Count);
+            }
+            finally
+            {
+                Directory.Delete(tempDir, true);
+            }
+        }
+
+        [TestMethod]
+        public void LoadAllData_DoesNotCrash_WhenFolderMissing()
+        {
+            var repo = new ComicRepository(
+                new FakeDataLoader(new Dictionary<string, List<Comic>>()),
+                new GenreFilter(),
+                new ComicSorter(),
+                new ComicGrouper()
+            );
+
+            var missingFolder = Path.Combine(Path.GetTempPath(), "Missing_" + System.Guid.NewGuid());
+
+            repo.LoadAllData(missingFolder);
+
+            Assert.AreEqual(0, repo.GetTotalCount());
         }
     }
 }

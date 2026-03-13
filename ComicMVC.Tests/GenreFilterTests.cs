@@ -1,51 +1,83 @@
 ﻿using Microsoft.VisualStudio.TestTools.UnitTesting;
-using ComicMVC.Services;
 using ComicMVC.Models;
+using ComicMVC.Services;
 using System.Collections.Generic;
+using System.Linq;
 
 namespace ComicMVC.Tests
 {
+    /*
+     * GenreFilterTests
+     *
+     * These tests check whether the genre filtering module returns the correct
+     * subset of comics. This matters because users need to narrow search results
+     * down by genre safely and predictably.
+     */
+
     [TestClass]
     public class GenreFilterTests
     {
-        [TestMethod]
-        public void FilterByGenre_All_ReturnsAll()
+        private GenreFilter _filter = null!;
+        private List<Comic> _comics = null!;
+
+        [TestInitialize]
+        public void Setup()
         {
-            var filter = new GenreFilter();
-            var comics = new List<Comic>
+            _filter = new GenreFilter();
+
+            _comics = new List<Comic>
             {
-                new Comic { Title="A", Genre="Fantasy" },
-                new Comic { Title="B", Genre="Horror" }
+                new Comic { Title = "Comic A", Genre = "Fantasy" },
+                new Comic { Title = "Comic B", Genre = "Horror" },
+                new Comic { Title = "Comic C", Genre = "Fantasy" }
             };
-
-            var result = filter.FilterByGenre(comics, "All");
-
-            Assert.AreEqual(2, result.Count);
         }
 
         [TestMethod]
-        public void FilterByGenre_MatchingGenre_ReturnsOnlyMatches()
+        public void FilterByGenre_All_ReturnsAllComics()
         {
-            var filter = new GenreFilter();
-            var comics = new List<Comic>
-            {
-                new Comic { Title="A", Genre="Fantasy" },
-                new Comic { Title="B", Genre="Horror" },
-                new Comic { Title="C", Genre="Fantasy" }
-            };
-
-            var result = filter.FilterByGenre(comics, "Fantasy");
-
-            Assert.AreEqual(2, result.Count);
-            Assert.IsTrue(result.TrueForAll(c => c.Genre == "Fantasy"));
+            var result = _filter.FilterByGenre(_comics, "All");
+            Assert.AreEqual(3, result.Count);
         }
 
         [TestMethod]
-        public void FilterByGenre_NullList_ReturnsEmpty()
+        public void FilterByGenre_ValidGenre_ReturnsOnlyMatchingComics()
         {
-            var filter = new GenreFilter();
+            var result = _filter.FilterByGenre(_comics, "Fantasy");
 
-            var result = filter.FilterByGenre(null, "Fantasy");
+            Assert.AreEqual(2, result.Count);
+            Assert.IsTrue(result.All(c => c.Genre == "Fantasy"));
+        }
+
+        [TestMethod]
+        public void FilterByGenre_InvalidGenre_ReturnsEmptyList()
+        {
+            var result = _filter.FilterByGenre(_comics, "Romance");
+
+            Assert.AreEqual(0, result.Count);
+        }
+
+        [TestMethod]
+        public void FilterByGenre_EmptyList_ReturnsEmptyList()
+        {
+            var result = _filter.FilterByGenre(new List<Comic>(), "Fantasy");
+
+            Assert.AreEqual(0, result.Count);
+        }
+
+        [TestMethod]
+        public void FilterByGenre_CaseInsensitiveMatch_Works()
+        {
+            var result = _filter.FilterByGenre(_comics, "fantasy");
+
+            Assert.AreEqual(2, result.Count);
+            Assert.IsTrue(result.All(c => c.Genre == "Fantasy"));
+        }
+
+        [TestMethod]
+        public void FilterByGenre_All_WithEmptyList_ReturnsEmptyList()
+        {
+            var result = _filter.FilterByGenre(new List<Comic>(), "All");
 
             Assert.AreEqual(0, result.Count);
         }

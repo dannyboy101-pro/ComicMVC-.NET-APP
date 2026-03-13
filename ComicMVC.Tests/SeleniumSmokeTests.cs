@@ -3,9 +3,21 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Support.UI;
 using System;
+using System.Net.Http;
 
 namespace ComicMVC.Tests
 {
+    /*
+     * SeleniumSmokeTests
+     *
+     * These tests check that the main pages of the web application can be reached
+     * in a browser. They are smoke tests rather than deep functional tests.
+     *
+     * Important:
+     * The ComicMVC web application must already be running before these tests start.
+     * The base URL can be changed below if the application uses a different port.
+     */
+
     [TestClass]
     public class SeleniumSmokeTests
     {
@@ -15,23 +27,28 @@ namespace ComicMVC.Tests
         [TestInitialize]
         public void Setup()
         {
-            // IMPORTANT: run the MVC app first (F5) so https://localhost:7289 is live
-            _baseUrl = "https://localhost:7289";
+            
+            _baseUrl = Environment.GetEnvironmentVariable("COMICMVC_BASEURL")
+                       ?? "https://localhost:7289";
 
             var options = new ChromeOptions();
             options.AddArgument("--headless=new");
             options.AddArgument("--disable-gpu");
             options.AddArgument("--window-size=1400,900");
-            options.AddArgument("--ignore-certificate-errors"); // avoids dev cert issues
+            options.AddArgument("--ignore-certificate-errors");
 
             _driver = new ChromeDriver(options);
+
+            
+            Assert.IsTrue(IsSiteAvailable(_baseUrl),
+                $"The application is not reachable at {_baseUrl}. Start ComicMVC before running Selenium tests.");
         }
 
         [TestCleanup]
         public void Cleanup()
         {
-            try { _driver.Quit(); } catch { /* ignore */ }
-            try { _driver.Dispose(); } catch { /* ignore */ }
+            try { _driver.Quit(); } catch { }
+            try { _driver.Dispose(); } catch { }
         }
 
         [TestMethod]
@@ -39,7 +56,6 @@ namespace ComicMVC.Tests
         {
             _driver.Navigate().GoToUrl($"{_baseUrl}/");
 
-            // wait for page to load (simple explicit wait)
             var wait = new WebDriverWait(_driver, TimeSpan.FromSeconds(5));
             wait.Until(d => !string.IsNullOrWhiteSpace(d.Title));
 
@@ -67,6 +83,22 @@ namespace ComicMVC.Tests
             wait.Until(d => d.PageSource.Contains("Comic Encyclopedia"));
 
             StringAssert.Contains(_driver.PageSource, "Comic Encyclopedia");
+        }
+
+        private bool IsSiteAvailable(string url)
+        {
+            try
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(3);
+
+                var response = client.GetAsync(url).GetAwaiter().GetResult();
+                return response.IsSuccessStatusCode;
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

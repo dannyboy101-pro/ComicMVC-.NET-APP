@@ -4,7 +4,7 @@ using ComicMVC.Models;
 
 namespace ComicMVC.Services
 {
-    // Decorator Pattern: adds caching around an IDataLoader
+   
     public class CachedDataLoader : IDataLoader
     {
         private readonly IDataLoader innerLoader;

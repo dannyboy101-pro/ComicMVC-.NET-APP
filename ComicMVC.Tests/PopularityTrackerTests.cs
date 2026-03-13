@@ -3,6 +3,9 @@ using ComicMVC.Services;
 
 namespace ComicMVC.Tests
 {
+    // tests for increasing counts when searches are recorded
+    //sorting repeated searches correctly
+    //returns most frequent results for user
     [TestClass]
     public class PopularityTrackerTests
     {

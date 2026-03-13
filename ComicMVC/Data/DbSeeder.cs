@@ -11,19 +11,19 @@ namespace ComicMVC.Data
             var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
-            // Create Staff role if it does not exist
+            
             if (!await roleManager.RoleExistsAsync("Staff"))
             {
                 await roleManager.CreateAsync(new IdentityRole("Staff"));
             }
 
-            // Demo staff account for video/testing
+            // ACCOUNT TO USE FOR VIDEO
             var staffEmail = "staff@comicmvc.local";
             var staffPassword = "Staff123!";
 
             var staffUser = await userManager.FindByEmailAsync(staffEmail);
 
-            // Create the user if it does not already exist
+            // Create the user(PUBLIC)
             if (staffUser == null)
             {
                 staffUser = new IdentityUser
@@ -42,7 +42,7 @@ namespace ComicMVC.Data
                 }
             }
 
-            // Add user to Staff role if not already assigned
+            // Add user to Staff role (saferail)
             if (!await userManager.IsInRoleAsync(staffUser, "Staff"))
             {
                 var roleResult = await userManager.AddToRoleAsync(staffUser, "Staff");

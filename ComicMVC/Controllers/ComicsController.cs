@@ -13,6 +13,8 @@ using System.Linq;
 
 namespace ComicMVC.Controllers
 {
+
+    // MAIN CONTROLLER. HANDLES ACTIONS FOR THE MVC APPLICATION
     public class ComicsController : Controller
     {
         private readonly ApplicationDbContext _db;
@@ -23,13 +25,13 @@ namespace ComicMVC.Controllers
         private readonly PopularityTracker _popularityTracker;
         private readonly IComicFactory _comicFactory;
 
-        // ✅ DI constructor (this is the correct MVC way)
+        
         public ComicsController(ApplicationDbContext db, UserManager<IdentityUser> userManager)
         {
             _db = db;
             _userManager = userManager;
 
-            // Same setup you had in Form1()
+            
             CsvParserBase parser = new TabSeparatedCsvParser();
             IDataLoader loader = new CsvDataLoader(parser);
             IComicFilter filter = new GenreFilter();
@@ -41,7 +43,7 @@ namespace ComicMVC.Controllers
             _popularityTracker = new PopularityTracker();
             _comicFactory = new ComicFactory();
 
-            // Load data (from your /DATA folder in the web project root)
+            // Load data (WHERE DATA IS LOADED)
             var dataFolder = Path.Combine(Directory.GetCurrentDirectory(), "CsvData");
             _repository.LoadAllData(dataFolder);
         }
@@ -91,11 +93,11 @@ namespace ComicMVC.Controllers
             if (group != "None")
                 results = ApplyGrouping(results, group);
 
-            // Limit to top 100 (same as your WinForms behaviour)
+            // Limit to top 100 (ADVANCED SEARCH SECTION)
             if (results.Count > 100)
-                results = results.Take(100).ToList();
+                results = results.Take(10).ToList();
 
-            // Role + login status for buttons in Index.cshtml
+            // Role + login status
             ViewBag.IsLoggedIn = User?.Identity?.IsAuthenticated == true;
             ViewBag.IsStaff = User?.IsInRole("Staff") == true;
 
@@ -126,7 +128,7 @@ namespace ComicMVC.Controllers
             return View(comic);
         }
 
-        // ✅ SAVE (Logged-in users only)
+        
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -142,8 +144,7 @@ namespace ComicMVC.Controllers
 
             var comic = list[index];
 
-            // Use a stable "ComicKey" so duplicates don't spam the DB
-            // Prefer ISBN if available, otherwise Title+Author
+            // PUBLIC USER LOGIN
             var comicKey = !string.IsNullOrWhiteSpace(comic.ISBN) && comic.ISBN != "Unknown"
                 ? comic.ISBN.Trim()
                 : $"{comic.Title}|{comic.Author}".Trim();
@@ -169,11 +170,11 @@ namespace ComicMVC.Controllers
                 await _db.SaveChangesAsync();
             }
 
-            // Return to the list page with same filters
+            
             return RedirectToAction(nameof(Index), new { genre });
         }
 
-        // ✅ FLAG (Staff only)
+        //STAFF LOGIN
         [Authorize(Roles = "Staff")]
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -193,7 +194,7 @@ namespace ComicMVC.Controllers
                 ? comic.ISBN.Trim()
                 : $"{comic.Title}|{comic.Author}".Trim();
 
-            // You may allow multiple flags per comic, but usually 1 flag is enough
+            
             bool alreadyFlagged = await _db.FlaggedComics.AnyAsync(f => f.ComicKey == comicKey);
 
             if (!alreadyFlagged)
@@ -218,12 +219,12 @@ namespace ComicMVC.Controllers
             return RedirectToAction(nameof(Index), new { genre });
         }
 
-        // ✅ Staff reporting page (basic version)
+        //STAFF FLAG SECTION
         [Authorize(Roles = "Staff")]
         [HttpGet]
         public async System.Threading.Tasks.Task<IActionResult> StaffDashboard()
         {
-            // Simple DB reports
+            
             var totalFavourites = await _db.FavouriteComics.CountAsync();
             var totalFlags = await _db.FlaggedComics.CountAsync();
 
@@ -235,7 +236,7 @@ namespace ComicMVC.Controllers
             ViewBag.TotalFavourites = totalFavourites;
             ViewBag.TotalFlags = totalFlags;
 
-            // Your in-memory reports (PopularityTracker)
+            
             ViewBag.TopQueries = _popularityTracker.GetTop10Queries();
             ViewBag.TopComics = _popularityTracker.GetTop10Comics();
             ViewBag.MoreThan100 = _popularityTracker.GetComicsInMoreThan100Searches();
@@ -267,6 +268,22 @@ namespace ComicMVC.Controllers
                 "By Genre" => comics.OrderBy(c => c.Genre).ThenBy(c => c.Title).ToList(),
                 _ => comics
             };
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> MyFavourites()
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrWhiteSpace(userId))
+                return Challenge();
+
+            var favourites = await _db.FavouriteComics
+                .Where(f => f.UserId == userId)
+                .OrderByDescending(f => f.CreatedAt)
+                .ToListAsync();
+
+            return View(favourites);
         }
     }
 }

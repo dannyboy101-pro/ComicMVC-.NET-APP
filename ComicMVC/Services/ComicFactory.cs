@@ -22,7 +22,7 @@ namespace ComicMVC.Services
         }
     }
 
-    // Optional: compact display factory
+    
     public class CompactComicFactory : IComicFactory
     {
         public string CreateSummary(Comic comic)
