@@ -1,8 +1,11 @@
-﻿@model ComicMVC.Models.Comic
+﻿@model ComicMVC.Models.ComicDetailsViewModel
 
 @{
     ViewData["Title"] = "Comic Details";
-    var detailsText = (ViewBag.DetailsText as string) ?? "";
+    var comic = Model.Comic;
+    var google = Model.GoogleBooks;
+    var openLibrary = Model.OpenLibrary;
+    var detailsText = Model.DetailsText ?? "";
 }
 
 <div class="container py-4">
@@ -13,35 +16,128 @@
 
     <hr />
 
-    <div class="card">
+    <div class="card mb-4">
         <div class="card-body">
-            <h2 class="h5">@Model.Title</h2>
-            <p class="text-muted mb-3">@Model.Author</p>
+            <h2 class="h5">@comic.Title</h2>
+            <p class="text-muted mb-3">@comic.Author</p>
 
             <dl class="row mb-0">
                 <dt class="col-sm-3">Year</dt>
-                <dd class="col-sm-9">@Model.YearOfPublication</dd>
+                <dd class="col-sm-9">@comic.YearOfPublication</dd>
 
                 <dt class="col-sm-3">Genre</dt>
-                <dd class="col-sm-9">@Model.Genre</dd>
+                <dd class="col-sm-9">@comic.Genre</dd>
 
                 <dt class="col-sm-3">Edition</dt>
-                <dd class="col-sm-9">@Model.Edition</dd>
+                <dd class="col-sm-9">@comic.Edition</dd>
 
                 <dt class="col-sm-3">Language</dt>
-                <dd class="col-sm-9">@Model.Languages</dd>
+                <dd class="col-sm-9">@comic.Languages</dd>
 
                 <dt class="col-sm-3">ISBN</dt>
-                <dd class="col-sm-9">@Model.ISBN</dd>
+                <dd class="col-sm-9">@comic.ISBN</dd>
 
                 <dt class="col-sm-3">Material</dt>
-                <dd class="col-sm-9">@Model.MaterialType</dd>
+                <dd class="col-sm-9">@comic.MaterialType</dd>
             </dl>
 
             @if (!string.IsNullOrWhiteSpace(detailsText))
             {
                 <hr />
                 <pre class="m-0">@detailsText</pre>
+            }
+        </div>
+    </div>
+
+    <div class="card mb-4">
+        <div class="card-body">
+            <h3 class="h5">External Metadata (Google Books API)</h3>
+
+            @if (google != null && google.Found)
+            {
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        @if (!string.IsNullOrWhiteSpace(google.ThumbnailUrl))
+                        {
+                            <img src="@google.ThumbnailUrl" alt="Google Books Cover" class="img-fluid rounded border" />
+                        }
+                    </div>
+
+                    <div class="col-md-9">
+                        <dl class="row">
+                            <dt class="col-sm-3">Title</dt>
+                            <dd class="col-sm-9">@google.Title</dd>
+
+                            <dt class="col-sm-3">Authors</dt>
+                            <dd class="col-sm-9">@google.Authors</dd>
+
+                            <dt class="col-sm-3">Publisher</dt>
+                            <dd class="col-sm-9">@google.Publisher</dd>
+
+                            <dt class="col-sm-3">Published</dt>
+                            <dd class="col-sm-9">@google.PublishedDate</dd>
+
+                            <dt class="col-sm-3">Categories</dt>
+                            <dd class="col-sm-9">@google.Categories</dd>
+
+                            <dt class="col-sm-3">Description</dt>
+                            <dd class="col-sm-9">@google.Description</dd>
+
+                            <dt class="col-sm-3">Preview</dt>
+                            <dd class="col-sm-9">
+                                @if (!string.IsNullOrWhiteSpace(google.PreviewLink))
+                                {
+                                    <a href="@google.PreviewLink" target="_blank" rel="noopener noreferrer">View on Google Books</a>
+                                }
+                                else
+                                {
+                                    <span>No preview available</span>
+                                }
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mb-0">No Google Books metadata was found for this comic.</p>
+            }
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <h3 class="h5">External Metadata (Open Library API)</h3>
+
+            @if (openLibrary != null && openLibrary.Found)
+            {
+                <div class="row">
+                    <div class="col-md-3 mb-3">
+                        @if (!string.IsNullOrWhiteSpace(openLibrary.CoverUrl))
+                        {
+                            <img src="@openLibrary.CoverUrl" alt="Open Library Cover" class="img-fluid rounded border" />
+                        }
+                    </div>
+
+                    <div class="col-md-9">
+                        <p class="mb-2">Open Library data was found for this ISBN.</p>
+
+                        @if (!string.IsNullOrWhiteSpace(openLibrary.InfoUrl))
+                        {
+                            <a href="@openLibrary.InfoUrl" target="_blank" rel="noopener noreferrer">
+                                View on Open Library
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="text-muted">No Open Library page link available.</span>
+                        }
+                    </div>
+                </div>
+            }
+            else
+            {
+                <p class="text-muted mb-0">No Open Library metadata was found for this comic.</p>
             }
         </div>
     </div>

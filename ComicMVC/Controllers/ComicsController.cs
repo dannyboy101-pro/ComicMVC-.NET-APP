@@ -10,28 +10,31 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace ComicMVC.Controllers
 {
-
     // MAIN CONTROLLER. HANDLES ACTIONS FOR THE MVC APPLICATION
     public class ComicsController : Controller
     {
         private readonly ApplicationDbContext _db;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly GoogleBooksService _googleBooksService;
 
         private readonly ComicRepository _repository;
         private readonly SearchListManager _searchListManager;
         private readonly PopularityTracker _popularityTracker;
         private readonly IComicFactory _comicFactory;
 
-        
-        public ComicsController(ApplicationDbContext db, UserManager<IdentityUser> userManager)
+        public ComicsController(
+            ApplicationDbContext db,
+            UserManager<IdentityUser> userManager,
+            GoogleBooksService googleBooksService)
         {
             _db = db;
             _userManager = userManager;
+            _googleBooksService = googleBooksService;
 
-            
             CsvParserBase parser = new TabSeparatedCsvParser();
             IDataLoader loader = new CsvDataLoader(parser);
             IComicFilter filter = new GenreFilter();
@@ -112,7 +115,7 @@ namespace ComicMVC.Controllers
 
         // DETAILS PAGE
         [HttpGet]
-        public IActionResult Details(int index, string genre = "All")
+        public async Task<IActionResult> Details(int index, string genre = "All")
         {
             var list = _repository.GetFilteredComics(genre);
             if (index < 0 || index >= list.Count)
@@ -124,15 +127,25 @@ namespace ComicMVC.Controllers
             ViewBag.IsLoggedIn = User?.Identity?.IsAuthenticated == true;
             ViewBag.IsStaff = User?.IsInRole("Staff") == true;
 
-            ViewBag.DetailsText = _comicFactory.CreateDetailedView(comic);
-            return View(comic);
+            var googleBooksData = await _googleBooksService.GetComicDataAsync(
+                comic.ISBN,
+                comic.Title,
+                comic.Author);
+
+            var vm = new ComicDetailsViewModel
+            {
+                Comic = comic,
+                GoogleBooks = googleBooksData,
+                DetailsText = _comicFactory.CreateDetailedView(comic)
+            };
+
+            return View(vm);
         }
 
-        
         [Authorize]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async System.Threading.Tasks.Task<IActionResult> Save(int index, string genre = "All")
+        public async Task<IActionResult> Save(int index, string genre = "All")
         {
             var userId = _userManager.GetUserId(User);
             if (string.IsNullOrWhiteSpace(userId))
@@ -170,15 +183,14 @@ namespace ComicMVC.Controllers
                 await _db.SaveChangesAsync();
             }
 
-            
             return RedirectToAction(nameof(Index), new { genre });
         }
 
-        //STAFF LOGIN
+        // STAFF LOGIN
         [Authorize(Roles = "Staff")]
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async System.Threading.Tasks.Task<IActionResult> Flag(int index, string genre = "All", string reason = "Needs review")
+        public async Task<IActionResult> Flag(int index, string genre = "All", string reason = "Needs review")
         {
             var staffUserId = _userManager.GetUserId(User);
             if (string.IsNullOrWhiteSpace(staffUserId))
@@ -194,7 +206,6 @@ namespace ComicMVC.Controllers
                 ? comic.ISBN.Trim()
                 : $"{comic.Title}|{comic.Author}".Trim();
 
-            
             bool alreadyFlagged = await _db.FlaggedComics.AnyAsync(f => f.ComicKey == comicKey);
 
             if (!alreadyFlagged)
@@ -219,12 +230,11 @@ namespace ComicMVC.Controllers
             return RedirectToAction(nameof(Index), new { genre });
         }
 
-        //STAFF FLAG SECTION
+        // STAFF FLAG SECTION
         [Authorize(Roles = "Staff")]
         [HttpGet]
-        public async System.Threading.Tasks.Task<IActionResult> StaffDashboard()
+        public async Task<IActionResult> StaffDashboard()
         {
-            
             var totalFavourites = await _db.FavouriteComics.CountAsync();
             var totalFlags = await _db.FlaggedComics.CountAsync();
 
@@ -236,12 +246,27 @@ namespace ComicMVC.Controllers
             ViewBag.TotalFavourites = totalFavourites;
             ViewBag.TotalFlags = totalFlags;
 
-            
             ViewBag.TopQueries = _popularityTracker.GetTop10Queries();
             ViewBag.TopComics = _popularityTracker.GetTop10Comics();
             ViewBag.MoreThan100 = _popularityTracker.GetComicsInMoreThan100Searches();
 
             return View(topFlagged);
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> MyFavourites()
+        {
+            var userId = _userManager.GetUserId(User);
+            if (string.IsNullOrWhiteSpace(userId))
+                return Challenge();
+
+            var favourites = await _db.FavouriteComics
+                .Where(f => f.UserId == userId)
+                .OrderByDescending(f => f.CreatedAt)
+                .ToListAsync();
+
+            return View(favourites);
         }
 
         // Helpers
@@ -268,22 +293,6 @@ namespace ComicMVC.Controllers
                 "By Genre" => comics.OrderBy(c => c.Genre).ThenBy(c => c.Title).ToList(),
                 _ => comics
             };
-        }
-
-        [Authorize]
-        [HttpGet]
-        public async Task<IActionResult> MyFavourites()
-        {
-            var userId = _userManager.GetUserId(User);
-            if (string.IsNullOrWhiteSpace(userId))
-                return Challenge();
-
-            var favourites = await _db.FavouriteComics
-                .Where(f => f.UserId == userId)
-                .OrderByDescending(f => f.CreatedAt)
-                .ToListAsync();
-
-            return View(favourites);
         }
     }
 }
