@@ -18,18 +18,18 @@ namespace ComicMVC.Services
 
         public async Task<GoogleBooksResult> GetComicDataAsync(string isbn, string title, string author)
         {
-            // Try ISBN first
-            if (!string.IsNullOrWhiteSpace(isbn) && !isbn.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
+            if (!string.IsNullOrWhiteSpace(isbn) &&
+                !isbn.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
             {
                 var byIsbn = await SearchAsync($"isbn:{isbn.Trim()}");
                 if (byIsbn.Found)
                     return byIsbn;
             }
 
-            // Fallback to title + author
             if (!string.IsNullOrWhiteSpace(title))
             {
                 string query = $"intitle:{title.Trim()}";
+
                 if (!string.IsNullOrWhiteSpace(author))
                     query += $"+inauthor:{author.Trim()}";
 
@@ -48,14 +48,18 @@ namespace ComicMVC.Services
                 string url = $"https://www.googleapis.com/books/v1/volumes?q={Uri.EscapeDataString(query)}&maxResults=1";
 
                 using var response = await _httpClient.GetAsync(url);
+
                 if (!response.IsSuccessStatusCode)
                     return new GoogleBooksResult();
 
                 var json = await response.Content.ReadAsStringAsync();
                 using var doc = JsonDocument.Parse(json);
 
-                if (!doc.RootElement.TryGetProperty("items", out JsonElement items) || items.GetArrayLength() == 0)
+                if (!doc.RootElement.TryGetProperty("items", out JsonElement items) ||
+                    items.GetArrayLength() == 0)
+                {
                     return new GoogleBooksResult();
+                }
 
                 var volumeInfo = items[0].GetProperty("volumeInfo");
 
@@ -87,12 +91,15 @@ namespace ComicMVC.Services
 
         private static string GetArrayAsCommaSeparated(JsonElement parent, string propertyName)
         {
-            if (!parent.TryGetProperty(propertyName, out JsonElement array) || array.ValueKind != JsonValueKind.Array)
+            if (!parent.TryGetProperty(propertyName, out JsonElement array) ||
+                array.ValueKind != JsonValueKind.Array)
+            {
                 return string.Empty;
+            }
 
             var values = array.EnumerateArray()
-                              .Select(x => x.GetString())
-                              .Where(x => !string.IsNullOrWhiteSpace(x));
+                .Select(x => x.GetString())
+                .Where(x => !string.IsNullOrWhiteSpace(x));
 
             return string.Join(", ", values!);
         }
