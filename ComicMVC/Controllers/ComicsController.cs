@@ -47,7 +47,7 @@ namespace ComicMVC.Controllers
             _comicFactory = new ComicFactory();
 
             // Load data (WHERE DATA IS LOADED)
-            var dataFolder = Path.Combine(Directory.GetCurrentDirectory(), "CsvData");
+            var dataFolder = Path.Combine(AppContext.BaseDirectory, "CsvData");
             _repository.LoadAllData(dataFolder);
         }
 
