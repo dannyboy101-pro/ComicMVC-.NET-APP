@@ -1,0 +1,39 @@
+name: Deploy to Elastic Beanstalk
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ComicMVC/ComicMVC.csproj
+
+    - name: Run tests
+      run: dotnet test ComicMVC.Tests/ComicMVC.Tests.csproj --no-restore
+
+    - name: Publish
+      run: dotnet publish ComicMVC/ComicMVC.csproj -c Release -o ./publish
+
+    - name: Zip artifact
+      run: cd publish && zip -r ../comicmvc-deploy.zip .
+
+    - name: Deploy to Elastic Beanstalk
+      uses: einaregilsson/beanstalk-deploy@v21
+      with:
+        aws_access_key: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws_secret_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        application_name: ComicMVC
+        environment_name: ComicMVC-env
+        region: us-east-1
+        version_label: ${{ github.sha }}
+        deployment_package: comicmvc-deploy.zip
