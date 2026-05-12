@@ -4,16 +4,19 @@ using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
 using ComicMVC.Models;
+using Microsoft.Extensions.Configuration;
 
 namespace ComicMVC.Services
 {
     public class GoogleBooksService
     {
         private readonly HttpClient _httpClient;
+        private readonly string _apiKey;
 
-        public GoogleBooksService(HttpClient httpClient)
+        public GoogleBooksService(HttpClient httpClient, IConfiguration configuration)
         {
             _httpClient = httpClient;
+            _apiKey = configuration["GoogleBooks:ApiKey"] ?? string.Empty;
         }
 
         public async Task<GoogleBooksResult> GetComicDataAsync(string isbn, string title, string author)
@@ -28,12 +31,14 @@ namespace ComicMVC.Services
 
             if (!string.IsNullOrWhiteSpace(title))
             {
-                string query = $"intitle:{title.Trim()}";
+                var byTitleOnly = await SearchAsync($"intitle:{title.Trim()}");
+                if (byTitleOnly.Found)
+                    return byTitleOnly;
+            }
 
-                if (!string.IsNullOrWhiteSpace(author))
-                    query += $"+inauthor:{author.Trim()}";
-
-                var byTitleAuthor = await SearchAsync(query);
+            if (!string.IsNullOrWhiteSpace(title) && IsUsefulAuthor(author))
+            {
+                var byTitleAuthor = await SearchAsync($"intitle:{title.Trim()}+inauthor:{author.Trim()}");
                 if (byTitleAuthor.Found)
                     return byTitleAuthor;
             }
@@ -45,7 +50,13 @@ namespace ComicMVC.Services
         {
             try
             {
-                string url = $"https://www.googleapis.com/books/v1/volumes?q={Uri.EscapeDataString(query)}&maxResults=1";
+                var encodedQuery = Uri.EscapeDataString(query);
+                var url = $"https://www.googleapis.com/books/v1/volumes?q={encodedQuery}&maxResults=1";
+
+                if (!string.IsNullOrWhiteSpace(_apiKey))
+                {
+                    url += $"&key={Uri.EscapeDataString(_apiKey)}";
+                }
 
                 using var response = await _httpClient.GetAsync(url);
 
@@ -56,6 +67,7 @@ namespace ComicMVC.Services
                 using var doc = JsonDocument.Parse(json);
 
                 if (!doc.RootElement.TryGetProperty("items", out JsonElement items) ||
+                    items.ValueKind != JsonValueKind.Array ||
                     items.GetArrayLength() == 0)
                 {
                     return new GoogleBooksResult();
@@ -80,6 +92,19 @@ namespace ComicMVC.Services
             {
                 return new GoogleBooksResult();
             }
+        }
+
+        private static bool IsUsefulAuthor(string? author)
+        {
+            if (string.IsNullOrWhiteSpace(author))
+                return false;
+
+            var trimmed = author.Trim();
+
+            if (trimmed.Equals("Unknown", StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            return trimmed.Any(char.IsLetter);
         }
 
         private static string GetString(JsonElement parent, string propertyName)

@@ -2,15 +2,13 @@ using ComicMVC.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.EntityFrameworkCore;
-using Pomelo.EntityFrameworkCore.MySql.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
-        ServerVersion.AutoDetect(builder.Configuration.GetConnectionString("DefaultConnection"))));
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options =>
 {
@@ -29,8 +27,14 @@ builder.Services.AddAuthentication()
 builder.Services.AddHttpClient<ComicMVC.Services.GoogleBooksService>();
 builder.Services.AddHttpClient<ComicMVC.Services.OpenLibraryService>();
 
-
 var app = builder.Build();
+
+// Quick local DB creation for demo/local run
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.EnsureCreated();
+}
 
 if (!app.Environment.IsDevelopment())
 {
